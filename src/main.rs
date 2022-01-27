@@ -3,48 +3,50 @@
 use std::collections::HashMap;
 use std::env;
 use std::ffi::OsStr;
-use std::fs::{read_to_string, write};
+use std::fs::{read_dir, read_to_string, soft_link, write, File};
 use std::io;
+use std::io::prelude::*;
 use std::path::Path;
 use std::process::Command;
 use String;
 
+const CHEAT_NAME: &str = "osu-master";
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let processName = getCurrentProcessName();
-    let cheatName = processName.replace("loader-", "").to_string();
     let cheat_data = cheatData(
         "https://europe-west3-assist-games.cloudfunctions.net/DOWNLOADER",
-        &cheatName,
+        &processName,
     );
-    // println!(
-    //     "{} {} {}",
-    //     cheat_data.name, cheat_data.version, cheat_data.link
-    // );
     if checkVersion(&cheat_data.version) {
         println!("Same version");
     } else {
-        println!("Downloading...");
+        println!("Downloading, please wait up to 3 min");
         downloadAndUnzip(&cheat_data.link, pathToFolderCheat());
     }
     updateVersion(&cheat_data.version);
-    println!("Run cheat");
+    println!("Running");
     runCheat();
     Ok(())
 }
 
 fn getCurrentProcessName() -> String {
-    let name = env::args()
-        .next()
-        .as_ref()
-        .map(Path::new)
-        .and_then(Path::file_name)
-        .and_then(OsStr::to_str)
-        .map(String::from)
-        .unwrap();
-    let mut parse = String::from(name);
-    let index = parse.find(".").unwrap();
-    parse.replace_range(index..parse.len(), "");
-    parse
+    // let name = env::args()
+    //     .next()
+    //     .as_ref()
+    //     .map(Path::new)
+    //     .and_then(Path::file_name)
+    //     .and_then(OsStr::to_str)
+    //     .map(String::from)
+    //     .unwrap();
+    // let mut parse = String::from(name);
+    // let mut index = parse.find(" ").unwrap_or(0);
+    // if index == 0 {
+    //     index = parse.find(".").unwrap();
+    // }
+    // parse.replace_range(index..parse.len(), "");
+    // parse
+    String::from(CHEAT_NAME)
 }
 
 fn pathToFolderCheat() -> String {
@@ -56,8 +58,10 @@ fn pathToFolderCheat() -> String {
 
 fn downloadAndUnzip(link: &str, to: String) {
     let mut tmpfile = tempfile::tempfile().unwrap();
-    reqwest::blocking::get(link).unwrap().copy_to(&mut tmpfile);
-    println!("finish download");
+    reqwest::blocking::get(link)
+        .unwrap()
+        .copy_to(&mut tmpfile)
+        .unwrap();
     unzip(tmpfile, to);
 }
 
@@ -130,7 +134,6 @@ fn updateVersion(version: &str) {
 
 fn runCheat() {
     let mut path = pathToFolderCheat();
-    path.push_str("\\cheat\\main.exe");
-    Command::new(&path).spawn().expect("To run cheat");
-    // println!("{}", path);
+    path.push_str("\\cheat\\Discord.exe");
+    Command::new(&path).spawn().expect("Error");
 }
